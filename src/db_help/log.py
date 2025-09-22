@@ -2,12 +2,14 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 
+
 class Logger:
     """log
 
     Returns:
         _type_: single
     """
+
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -15,7 +17,7 @@ class Logger:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self,level = 'debug',log_file_name = "app.log"):
+    def __init__(self, level="debug", log_file_name="app.log"):
         """
         Level (级别): 定义日志的严重程度。从低到高依次是：
         DEBUG: 详细的调试信息，通常只在开发阶段使用。
@@ -27,18 +29,18 @@ class Logger:
         # 建议在开发环境使用 DEBUG，生产环境使用 INFO 或 WARNING
 
         """
-        if not hasattr(self, 'initialized'):
+        if not hasattr(self, "initialized"):
             self.initialized = True
 
-            if level == 'debug':
+            if level == "debug":
                 self.LOG_LEVEL = logging.DEBUG  # 开发阶段
-            elif level == 'info':
+            elif level == "info":
                 self.LOG_LEVEL = logging.INFO  # 生产阶段
-            elif level == 'warning':
+            elif level == "warning":
                 self.LOG_LEVEL = logging.WARNING
-            elif level == 'error':
+            elif level == "error":
                 self.LOG_LEVEL = logging.ERROR
-            elif level == 'critical':
+            elif level == "critical":
                 self.LOG_LEVEL = logging.CRITICAL
             else:
                 self.LOG_LEVEL = logging.INFO  # 默认级别
@@ -52,18 +54,18 @@ class Logger:
             os.makedirs(self.LOG_DIR, exist_ok=True)
             self.logger = None
             self.setup_logging()
-            self.env = 'dev'
+            self.env = "dev"
 
-    def reset_level(self,level = 'debug',env = 'dev'):
-        if level == 'debug':
+    def reset_level(self, level="debug", env="dev"):
+        if level == "debug":
             self.LOG_LEVEL = logging.DEBUG  # 开发阶段
-        elif level == 'info':
+        elif level == "info":
             self.LOG_LEVEL = logging.INFO  # 生产阶段
-        elif level == 'warning':
+        elif level == "warning":
             self.LOG_LEVEL = logging.WARNING
-        elif level == 'error':
+        elif level == "error":
             self.LOG_LEVEL = logging.ERROR
-        elif level == 'critical':
+        elif level == "critical":
             self.LOG_LEVEL = logging.CRITICAL
         else:
             self.LOG_LEVEL = logging.INFO  # 默认级别
@@ -72,8 +74,7 @@ class Logger:
         self.env = env
 
     def setup_logging(self):
-        """# --- 3. 配置 Logger ---
-        """
+        """# --- 3. 配置 Logger ---"""
         # 获取根 Logger (也可以创建自定义的 Logger: logging.getLogger('my_app'))
         logger = logging.getLogger()
         logger.setLevel(self.LOG_LEVEL)
@@ -83,14 +84,14 @@ class Logger:
             # --- 4. 配置 Formatter (格式化器) ---
             # 常见格式：时间 - 日志级别 - Logger名称 - 模块名 - 行号 - 消息
             formatter = logging.Formatter(
-                '%(asctime)s - %(levelname)s - %(name)s - %(module)s:%(lineno)d - %(message)s'
+                "%(asctime)s - %(levelname)s - %(name)s - %(module)s:%(lineno)d - %(message)s"
             )
 
             # --- 5. 配置 Handler (处理器) ---
 
             # 5.1 控制台处理器 (StreamHandler)
             console_handler = logging.StreamHandler()
-            console_handler.setLevel(logging.INFO) # 控制台只显示 INFO 及以上级别的日志
+            console_handler.setLevel(logging.INFO)  # 控制台只显示 INFO 及以上级别的日志
             console_handler.setFormatter(formatter)
             logger.addHandler(console_handler)
 
@@ -101,11 +102,11 @@ class Logger:
             # backupCount: 保留的旧日志文件数量
             file_handler = RotatingFileHandler(
                 self.LOG_FILE_PATH,
-                maxBytes=10 * 1024 * 1024, # 10 MB
+                maxBytes=10 * 1024 * 1024,  # 10 MB
                 backupCount=5,
-                encoding='utf-8'
+                encoding="utf-8",
             )
-            file_handler.setLevel(self.LOG_LEVEL) # 文件中显示所有指定级别的日志
+            file_handler.setLevel(self.LOG_LEVEL)  # 文件中显示所有指定级别的日志
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)
 
@@ -126,7 +127,7 @@ class Logger:
         self.logger = logger
 
 
-Log = Logger(log_file_name = "app.log")
+Log = Logger(log_file_name="app.log")
 del Logger
 
 """

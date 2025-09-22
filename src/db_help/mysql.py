@@ -1,6 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 
+
 class MySQLManager:
     """
     一个用于与 MySQL 数据库交互的通用工具包。
@@ -34,10 +35,12 @@ class MySQLManager:
                     user=self.user,
                     password=self.password,
                     database=self.database,
-                    port=self.port
+                    port=self.port,
                 )
                 if self.connection.is_connected():
-                    print(f"成功连接到 MySQL 数据库: {self.database if self.database else self.host}")
+                    print(
+                        f"成功连接到 MySQL 数据库: {self.database if self.database else self.host}"
+                    )
                 return self.connection
             except Error as e:
                 print(f"连接数据库时发生错误: {e}")
@@ -54,7 +57,9 @@ class MySQLManager:
             print("数据库连接已关闭。")
             self.connection = None
 
-    def execute_query(self, query, params=None, fetch_one=False, fetch_all=False, commit=False):
+    def execute_query(
+        self, query, params=None, fetch_one=False, fetch_all=False, commit=False
+    ):
         """
         执行 SQL 查询 (用于 SELECT, INSERT, UPDATE, DELETE, DDL)。
         :param query: 要执行的 SQL 查询字符串。
@@ -71,13 +76,19 @@ class MySQLManager:
         cursor = None
         result = None
         try:
-            cursor = conn.cursor(dictionary=True) # 使用 dictionary=True 返回字典形式的结果
+            cursor = conn.cursor(
+                dictionary=True
+            )  # 使用 dictionary=True 返回字典形式的结果
             cursor.execute(query, params)
 
             if commit:
                 conn.commit()
                 # print(f"Query committed. Affected rows: {cursor.rowcount}")
-                result = cursor.lastrowid if query.strip().upper().startswith("INSERT") else cursor.rowcount
+                result = (
+                    cursor.lastrowid
+                    if query.strip().upper().startswith("INSERT")
+                    else cursor.rowcount
+                )
             elif fetch_one:
                 result = cursor.fetchone()
             elif fetch_all:
@@ -86,7 +97,7 @@ class MySQLManager:
         except Error as e:
             print(f"执行查询时发生错误: {e}")
             if conn:
-                conn.rollback() # 发生错误时回滚事务
+                conn.rollback()  # 发生错误时回滚事务
             result = None
         finally:
             if cursor:
@@ -105,7 +116,9 @@ class MySQLManager:
         # 所以这里需要一个临时的连接器或者修改self.database
         # 更安全的做法是，连接到一个默认的数据库（如'mysql'）来执行此操作
         # 或者在初始化时就不指定database
-        temp_manager = MySQLManager(self.host, self.user, self.password, database=None, port=self.port)
+        temp_manager = MySQLManager(
+            self.host, self.user, self.password, database=None, port=self.port
+        )
         conn = temp_manager._connect()
         if not conn:
             return False
@@ -117,7 +130,7 @@ class MySQLManager:
             cursor.execute(query)
             conn.commit()
             print(f"数据库 '{db_name}' 已成功创建或已存在。")
-            self.database = db_name # 如果成功，更新当前管理器指向新数据库
+            self.database = db_name  # 如果成功，更新当前管理器指向新数据库
             return True
         except Error as e:
             print(f"创建数据库 '{db_name}' 时发生错误: {e}")
@@ -126,8 +139,7 @@ class MySQLManager:
             if cursor:
                 cursor.close()
             if conn:
-                temp_manager.close() # 关闭临时连接
-
+                temp_manager.close()  # 关闭临时连接
 
     def create_table(self, table_name, columns_definition):
         """
@@ -204,7 +216,16 @@ class MySQLManager:
             if cursor:
                 cursor.close()
 
-    def select(self, table_name, columns="*", conditions=None, params=None, order_by=None, limit=None, fetch_all=True):
+    def select(
+        self,
+        table_name,
+        columns="*",
+        conditions=None,
+        params=None,
+        order_by=None,
+        limit=None,
+        fetch_all=True,
+    ):
         """
         查询数据。
         :param table_name: 表名。
@@ -227,7 +248,9 @@ class MySQLManager:
         if limit is not None:
             query += f" LIMIT {limit}"
 
-        result = self.execute_query(query, params=params, fetch_all=fetch_all, fetch_one=not fetch_all)
+        result = self.execute_query(
+            query, params=params, fetch_all=fetch_all, fetch_one=not fetch_all
+        )
         return result
 
     def update(self, table_name, data, conditions, params=None):
