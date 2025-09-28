@@ -1,5 +1,9 @@
 import mysql.connector
 from mysql.connector import Error
+import os
+from dotenv import load_dotenv, find_dotenv
+dotenv_path = find_dotenv()
+load_dotenv(dotenv_path, override=True)
 
 
 class MySQLManager:
@@ -8,7 +12,11 @@ class MySQLManager:
     提供了连接管理、增删改查 (CRUD) 操作和错误处理。
     """
 
-    def __init__(self, host, user, password, database=None, port=3306):
+    def __init__(self, 
+                 host=None, 
+                 user=None, 
+                 password=None, 
+                 database=None, port=3306):
         """
         初始化数据库管理器。
         :param host: 数据库主机名或 IP 地址。
@@ -17,10 +25,10 @@ class MySQLManager:
         :param database: 默认数据库名称 (可选，如果只连接到服务器而不指定数据库)。
         :param port: 数据库端口 (默认为 3306)。
         """
-        self.host = host
-        self.user = user
-        self.password = password
-        self.database = database
+        self.host = host or os.getenv("MySQL_DB_HOST")
+        self.user = user or os.getenv("MySQL_DB_USER")
+        self.password = password or os.getenv("MySQL_DB_PASSWORD")
+        self.database = database or os.getenv("MySQL_DB_NAME")
         self.port = port
         self.connection = None
 

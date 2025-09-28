@@ -1,6 +1,7 @@
 README.md
 pyproject.toml
 src/db_help/__init__.py
+src/db_help/file_manager.py
 src/db_help/log.py
 src/db_help/mysql.py
 src/db_help/qdrant.py
