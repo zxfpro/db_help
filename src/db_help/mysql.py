@@ -1,10 +1,14 @@
 import mysql.connector
 from mysql.connector import Error
 import os
+from datetime import datetime
 from dotenv import load_dotenv, find_dotenv
 dotenv_path = find_dotenv()
 load_dotenv(dotenv_path, override=True)
 
+from db_help.log import Log
+logger = Log.logger
+editing_logger = logger.info
 
 class MySQLManager:
     """
@@ -46,12 +50,12 @@ class MySQLManager:
                     port=self.port,
                 )
                 if self.connection.is_connected():
-                    print(
+                    editing_logger(
                         f"成功连接到 MySQL 数据库: {self.database if self.database else self.host}"
                     )
                 return self.connection
             except Error as e:
-                print(f"连接数据库时发生错误: {e}")
+                logger.error(f"连接数据库时发生错误: {e}")
                 self.connection = None
                 return None
         return self.connection
@@ -62,7 +66,7 @@ class MySQLManager:
         """
         if self.connection and self.connection.is_connected():
             self.connection.close()
-            print("数据库连接已关闭。")
+            editing_logger("数据库连接已关闭。")
             self.connection = None
 
     def execute_query(
@@ -91,7 +95,7 @@ class MySQLManager:
 
             if commit:
                 conn.commit()
-                # print(f"Query committed. Affected rows: {cursor.rowcount}")
+                editing_logger(f"Query committed. Affected rows: {cursor.rowcount}")
                 result = (
                     cursor.lastrowid
                     if query.strip().upper().startswith("INSERT")
@@ -103,7 +107,7 @@ class MySQLManager:
                 result = cursor.fetchall()
 
         except Error as e:
-            print(f"执行查询时发生错误: {e}")
+            logger.error(f"执行查询时-发生错误: {e}")
             if conn:
                 conn.rollback()  # 发生错误时回滚事务
             result = None
@@ -137,11 +141,11 @@ class MySQLManager:
             query = f"CREATE DATABASE IF NOT EXISTS {db_name}"
             cursor.execute(query)
             conn.commit()
-            print(f"数据库 '{db_name}' 已成功创建或已存在。")
+            editing_logger(f"数据库 '{db_name}' 已成功创建或已存在。")
             self.database = db_name  # 如果成功，更新当前管理器指向新数据库
             return True
         except Error as e:
-            print(f"创建数据库 '{db_name}' 时发生错误: {e}")
+            logger.error(f"创建数据库 '{db_name}' 时发生错误: {e}")
             return False
         finally:
             if cursor:
@@ -157,12 +161,12 @@ class MySQLManager:
         :return: True 如果成功，False 如果失败。
         """
         if not self.database:
-            print("错误：未指定数据库，无法创建表。")
+            logger.error("错误：未指定数据库，无法创建表。")
             return False
         query = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns_definition})"
         result = self.execute_query(query, commit=True)
         if result is not None:
-            print(f"表 '{table_name}' 已成功创建或已存在。")
+            editing_logger(f"表 '{table_name}' 已成功创建或已存在。")
             return True
         return False
 
@@ -175,7 +179,7 @@ class MySQLManager:
         :return: 新插入记录的 ID (如果表有自增主键)，否则返回 None。
         """
         if not data:
-            print("错误：插入数据为空。")
+            logger.warning("错误：插入数据为空。")
             return None
 
         columns = ", ".join(data.keys())
@@ -185,7 +189,7 @@ class MySQLManager:
 
         last_row_id = self.execute_query(query, params=params, commit=True)
         if last_row_id is not None:
-            print(f"数据已成功插入到 '{table_name}'，ID: {last_row_id}")
+            editing_logger(f"数据已成功插入到 '{table_name}'，ID: {last_row_id}")
         return last_row_id
 
     def bulk_insert(self, table_name, columns, data_list):
@@ -198,7 +202,7 @@ class MySQLManager:
         :return: 影响的行数，或 None。
         """
         if not data_list:
-            print("错误：批量插入数据为空。")
+            logger.warning("错误：批量插入数据为空。")
             return None
 
         cols_str = ", ".join(columns)
@@ -214,10 +218,10 @@ class MySQLManager:
             cursor = conn.cursor()
             cursor.executemany(query, data_list)
             conn.commit()
-            print(f"批量插入 {cursor.rowcount} 条数据到 '{table_name}'。")
+            editing_logger(f"批量插入 {cursor.rowcount} 条数据到 '{table_name}'。")
             return cursor.rowcount
         except Error as e:
-            print(f"批量插入数据时发生错误: {e}")
+            editing_logger(f"批量插入数据时发生错误: {e}")
             conn.rollback()
             return None
         finally:
@@ -261,6 +265,7 @@ class MySQLManager:
         )
         return result
 
+
     def update(self, table_name, data, conditions, params=None):
         """
         更新数据。
@@ -272,10 +277,10 @@ class MySQLManager:
         :return: 影响的行数，或 None。
         """
         if not data:
-            print("错误：更新数据为空。")
+            editing_logger("错误：更新数据为空。")
             return None
         if not conditions:
-            print("错误：更新操作必须包含 WHERE 条件，以避免全表更新。")
+            editing_logger("错误：更新操作必须包含 WHERE 条件，以避免全表更新。")
             return None
 
         set_clauses = [f"{key} = %s" for key in data.keys()]
@@ -292,7 +297,7 @@ class MySQLManager:
 
         affected_rows = self.execute_query(query, params=final_params, commit=True)
         if affected_rows is not None:
-            print(f"'{table_name}' 中 {affected_rows} 条数据已更新。")
+            editing_logger(f"'{table_name}' 中 {affected_rows} 条数据已更新。")
         return affected_rows
 
     def delete(self, table_name, conditions, params=None):
@@ -304,11 +309,99 @@ class MySQLManager:
         :return: 影响的行数，或 None。
         """
         if not conditions:
-            print("错误：删除操作必须包含 WHERE 条件，以避免全表删除。")
+            editing_logger("错误：删除操作必须包含 WHERE 条件，以避免全表删除。")
             return None
 
         query = f"DELETE FROM {table_name} WHERE {conditions}"
         affected_rows = self.execute_query(query, params=params, commit=True)
         if affected_rows is not None:
-            print(f"'{table_name}' 中 {affected_rows} 条数据已删除。")
+            editing_logger(f"'{table_name}' 中 {affected_rows} 条数据已删除。")
         return affected_rows
+
+
+
+class MySQLManagerWithVersionControler(MySQLManager):
+
+    def __init__(self, host=None, user=None, password=None, database=None, port=3306):
+        super().__init__(host, user, password, database, port)
+        """
+
+        要求sql   首位 id int 自增
+                 二位 name
+                 包含 id name version 
+        """
+        #assert 特定要求的数据库
+        self.select = ["name", "version", "timestamp", "prompt", "use_case"]
+
+    def _search_by_version(self,target_name,target_version,table_name,
+                          ):
+        """
+        1 有值  指定version => 指定
+        有值 无指定version = > 最高
+        无值, 有,无指定version => 无值
+        """
+        name_id = self.select[0]
+        _select = ", ".join(self.select)
+        base_query = f"""
+            SELECT id, {_select}
+            FROM {table_name}
+            WHERE {name_id} = %s
+        """
+        params = [target_name] # 初始化参数列表
+
+        if target_version is not None:
+            # 如果指定了版本，添加版本条件
+            query = f"{base_query} AND version = %s LIMIT 1"
+            params.append(target_version)
+        else:
+            # 如果没有指定版本，获取最新版本
+            query = f"{base_query} ORDER BY timestamp DESC, version DESC LIMIT 1"
+            # 注意：这里params只需要target_name，因为ORDER BY和LIMIT不依赖额外的参数
+
+        result = self.execute_query(query, params=tuple(params), fetch_one=True)
+        return result
+
+    def get_content_by_version(self,
+                             target_name,
+                             table_name,
+                             target_version = None,
+                             ) -> tuple[str, int]:
+        
+        """
+        从sql获取提示词
+        """
+        result = self._search_by_version(
+                target_name = target_name,
+                target_version = target_version,
+                table_name = table_name,
+            )
+        if not result:
+            result = self._search_by_version(
+                target_name = target_name,
+                target_version = target_version,
+                table_name = table_name,
+            )
+        return result
+
+    def save_content(self,table_name,data):
+        target_name = data['name']
+        latest_version = self.get_content_by_version(
+                             target_name,
+                             table_name,
+                             target_version = None)
+        if latest_version:
+            # 如果存在版本加1
+            version_ori = latest_version.get("version")
+            _, version = version_ori.split(".")
+            version = int(version)
+            version += 1
+            version_ = f"1.{version}"
+        else:
+            # 如果不存在版本为1.0
+            version_ = '1.0'
+        data.update({"version":version_})
+        self.insert(table_name, data)
+
+
+
+        

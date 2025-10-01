@@ -5,6 +5,7 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": [
-        "-s" // 添加这一行
+        "--log-cli-level=INFO",
+        "-s" // 添加这一行,
     ]
 }

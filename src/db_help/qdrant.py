@@ -53,7 +53,6 @@ class QdrantManager:
         if not data:
             print("错误：插入数据为空。")
             return None
-        print(data,'data')
         points = [
                 models.PointStruct(
                     **data
