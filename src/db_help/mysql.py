@@ -405,3 +405,41 @@ class MySQLManagerWithVersionControler(MySQLManager):
 
 
         
+
+    def search_by_time(self, start_time: datetime, end_time: datetime = None):
+        """
+        #TODO 
+        根据时间范围获取指定内容。
+
+        Args:
+            start_time (datetime): 查询的起始时间。
+            end_time (datetime, optional): 查询的结束时间。如果未提供，则只查询大于等于 start_time 的内容。
+
+        Returns:
+            list[dict] or None: 如果找到，返回包含 new_id, name, version, timestamp, content 字段的字典列表；
+                                否则返回 None。
+        """
+        table_name = "content"
+        if end_time:
+            query = f"""
+                SELECT new_id, name, version, timestamp, content
+                FROM {table_name}
+                WHERE timestamp BETWEEN %s AND %s
+                ORDER BY timestamp DESC
+            """
+            params = (start_time, end_time)
+        else:
+            query = f"""
+                SELECT new_id, name, version, timestamp, content
+                FROM {table_name}
+                WHERE timestamp >= %s
+                ORDER BY timestamp DESC
+            """
+            params = (start_time,)
+        
+        result = self.mysql.execute_query(query, params=params, fetch_one=False)
+        if result:
+            print(f"找到时间范围从 '{start_time}' 到 '{end_time or '现在'}' 的内容数据。")
+        else:
+            print(f"未找到时间范围从 '{start_time}' 到 '{end_time or '现在'}' 的内容数据。")
+        return result
